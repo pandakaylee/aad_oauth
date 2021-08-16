@@ -29,7 +29,11 @@ class AadMsalTokenAvailableEvent extends AadEvent {
 
 class AadLogoutRequestEvent extends AadEvent {}
 
-class AadLoginRequestEvent extends AadEvent {}
+class AadLoginRequestEvent extends AadEvent {
+  AadLoginRequestEvent({this.refreshIfAvailable = false});
+
+  final bool refreshIfAvailable;
+}
 
 class AadFullFlowUrlLoadedEvent extends AadEvent {
   final String url;

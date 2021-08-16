@@ -44,7 +44,7 @@ class AadBloc extends Bloc<AadEvent, AadState> {
             state is AadAuthenticationFailedState) {
           yield AadInitialState();
         }
-        yield await processLoginRequested();
+        yield await processLoginRequested(refreshIfAvailable: event.refreshIfAvailable);
       } else if (event is AadTokenRefreshRequestEvent) {
         yield await processAccessTokenRefresh();
       } else if (event is AadLogoutRequestEvent) {
@@ -82,10 +82,10 @@ class AadBloc extends Bloc<AadEvent, AadState> {
     return state;
   }
 
-  Future<AadState> processLoginRequested() async {
+  Future<AadState> processLoginRequested({bool refreshIfAvailable = false}) async {
     try {
       final token = await tokenRepository.loadTokenFromCache();
-      if (token.hasValidAccessToken()) {
+      if (!refreshIfAvailable && token.hasValidAccessToken()) {
         return AadAuthenticatedState(token: token);
       } else if (token.hasRefreshToken()) {
         return await _processRefreshWithToken(token);

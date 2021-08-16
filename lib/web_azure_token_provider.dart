@@ -81,7 +81,7 @@ class WebAzureTokenProvider extends AuthTokenProvider {
   }
 
   @override
-  Future<String?> getAccessToken() async {
+  Future<String?> getAccessToken({bool refreshIfAvailable = false}) async {
     try {
       final accessToken = await GetBearerToken();
       bloc.add(AadMsalTokenAvailableEvent(

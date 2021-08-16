@@ -15,8 +15,8 @@ class AuthTokenProvider {
   AuthTokenProvider({required this.tokenRepository})
       : bloc = AadBloc(tokenRepository: tokenRepository);
 
-  Future<void> login() async {
-    await getAccessToken();
+  Future<void> login({bool refreshIfAvailable = false}) async {
+    await getAccessToken(refreshIfAvailable: refreshIfAvailable);
   }
 
   Future<void> logout() async {
@@ -32,19 +32,21 @@ class AuthTokenProvider {
     }
   }
 
-  Future<String?> getAccessToken() async {
+  Future<String?> getAccessToken({bool refreshIfAvailable = false}) async {
     final state = bloc.state;
-    if (state is AadWithTokenState) {
-      final token = state.token;
-      if (token.hasValidAccessToken()) {
-        //print("Token was good");
-        return token.accessToken;
-      } else {
-        //print("Token was not valid...");
+    if (!refreshIfAvailable) {
+      if (state is AadWithTokenState) {
+        final token = state.token;
+        if (token.hasValidAccessToken()) {
+          //print("Token was good");
+          return token.accessToken;
+        } else {
+          //print("Token was not valid...");
+        }
       }
     }
 
-    bloc.add(AadLoginRequestEvent());
+    bloc.add(AadLoginRequestEvent(refreshIfAvailable: refreshIfAvailable));
     await for (final aadState in bloc.stream) {
       //print("Processed ${aadState.runtimeType.toString()} awaiting token");
       if (aadState is AadWithTokenState) {
