@@ -8,75 +8,57 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 class AzureLoginWidget extends StatelessWidget {
   final AuthTokenProvider authTokenProvider;
-  final Widget whenAuthenticated;
-  final Widget whenSignedOut;
-  final Widget whenInitial;
-  final Widget whenLoginFailed;
+  final Widget child;
   AzureLoginWidget({
-    required this.whenAuthenticated,
+    required this.child,
     required this.authTokenProvider,
-    Widget? whenInitial,
-    Widget? whenSignedOut,
-    Widget? whenLoginFailed,
-  })  : whenInitial = whenInitial ?? whenAuthenticated,
-        whenSignedOut = whenSignedOut ?? whenAuthenticated,
-        whenLoginFailed = whenLoginFailed ?? whenAuthenticated;
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
       value: authTokenProvider.bloc,
       child: _AzureLoginSubTree(
-        whenAuthenticated: whenAuthenticated,
-        whenSignedOut: whenSignedOut,
-        whenInitial: whenInitial,
-        whenLoginFailed: whenLoginFailed,
+        child: child,
       ),
     );
   }
 }
 
 class _AzureLoginSubTree extends StatelessWidget {
-  final Widget whenAuthenticated;
-  final Widget whenSignedOut;
-  final Widget whenInitial;
-  final Widget whenLoginFailed;
+  final Widget child;
 
-  _AzureLoginSubTree(
-      {required this.whenAuthenticated,
-      required this.whenInitial,
-      required this.whenSignedOut,
-      required this.whenLoginFailed});
+  _AzureLoginSubTree({
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AadBloc, AadState>(builder: (context, state) {
-      if (state is AadInitialState) {
-        return whenInitial;
-      }
-      if (state is AadFullFlowState) {
-        return _FullLoginFlowWidget();
-      }
-      if (state is AadAuthenticationFailedState) {
-        return whenLoginFailed;
-      }
-      if (state is AadSignedOutState) {
-        return whenSignedOut;
-      }
-      if (state is AadWithTokenState) {
-        return whenAuthenticated;
-      }
-      if (state is AadInternalErrorState) {
-        return Center(child: Text(state.message));
-      }
-      return Center(
-          child:
-              Text('Unknown Azure AD State encountered: ${state.runtimeType}'));
+      // Use an IndexedStack to keep state between transitions
+      var index = 0;
+      if (state is AadFullFlowState) index = 1;
+
+      return IndexedStack(
+        children: [
+          child,
+          _FullLoginFlowWidget(
+            // This will ensure that every time we go to the full-flow state,
+            // we're rebuilding the WebView and making sure that it doesn't end
+            // up as a white screen (due to redirections already having occured
+            // from a previous interaction).
+            key: ValueKey(index),
+          ),
+        ],
+        index: index,
+      );
     });
   }
 }
 
 class _FullLoginFlowWidget extends StatelessWidget {
+  _FullLoginFlowWidget({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AadBloc, AadState>(
